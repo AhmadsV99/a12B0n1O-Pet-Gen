@@ -1,168 +1,326 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Grow A Garden — Pet Generator (mobile replica)</title>
-  <style>
-    :root{
-      --bg-top:#5fc0ff;
-      --bg-bottom:#1da0e6;
-      --card:#ffffff;
-      --card-shadow: 0 18px 40px rgba(6,18,30,0.25);
-      --muted:#94a3b8;
-      --accent-start:#ff7a2d;
-      --accent-end:#ff4f1a;
-      --pill-bg: rgba(0,0,0,0.04);
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;color:#0b1720}
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Grow A Garden — Pet Generator (with loading)</title>
+<style>
+  :root{
+    --bg-top:#5fc0ff;
+    --bg-bottom:#1da0e6;
+    --card:#ffffff;
+    --card-shadow: 0 18px 40px rgba(6,18,30,0.25);
+    --muted:#94a3b8;
+    --accent-start:#ff7a2d;
+    --accent-end:#ff4f1a;
+    --pill-bg: rgba(0,0,0,0.04);
+    --accent-green:#10b981;
+    --dot-gray:#e6e6e6;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;color:#0b1720}
+  body{
+    background:linear-gradient(180deg,var(--bg-top),var(--bg-bottom));
+    display:flex;align-items:center;justify-content:center;padding:28px;
+    -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+  }
 
-    body{
-      background:linear-gradient(180deg,var(--bg-top),var(--bg-bottom));
-      display:flex;align-items:center;justify-content:center;padding:28px;
-      -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
-    }
+  .viewport{width:360px;max-width:94vw;display:flex;align-items:center;justify-content:center}
+  .card{
+    width:320px;background:var(--card);border-radius:16px;box-shadow:var(--card-shadow);
+    padding:16px 16px 20px 16px;display:flex;flex-direction:column;gap:12px;align-items:center;animation:fadeIn .45s ease;
+  }
+  @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 
-    .viewport{width:360px;max-width:94vw;display:flex;align-items:center;justify-content:center}
+  .username-row{align-self:flex-start;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .username-tag{font-size:12px;color:#334155;background:var(--pill-bg);padding:6px 10px;border-radius:8px;border:1px solid rgba(2,6,12,0.03)}
+  .username-input,.qty-input{font-size:13px;padding:8px;border-radius:8px;border:1px solid rgba(2,6,12,0.06)}
+  .username-input{width:130px;max-width:calc(100% - 110px)}
+  .qty-input{width:60px;text-align:center}
 
-    .card{
-      width:320px;
-      background:var(--card);
-      border-radius:12px;
-      box-shadow:var(--card-shadow);
-      padding:14px 14px 18px 14px;
-      display:flex;flex-direction:column;gap:10px;align-items:center;
-    }
+  h1{font-size:16px;margin:4px 0 6px;text-align:center;color:#0b1720;font-weight:700}
 
-    .username-row{align-self:flex-start;display:flex;gap:8px;align-items:center}
-    .username-tag{font-size:12px;color:#334155;background:var(--pill-bg);padding:6px 10px;border-radius:8px;border:1px solid rgba(2,6,12,0.03)}
-    /* reduced width to prevent spilling; max-width keeps it responsive */
-    .username-input{font-size:13px;padding:8px;border-radius:8px;border:1px solid rgba(2,6,12,0.06);width:130px;max-width:calc(100% - 110px)}
+  .pet-list{display:flex;gap:10px;align-items:center;justify-content:center;padding:6px 4px;flex-wrap:wrap}
+  .pet{width:68px;height:68px;border-radius:12px;background:#fbfbfb;border:1px solid rgba(3,10,18,0.04);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:transform .15s, box-shadow .15s;padding:6px}
+  .pet img{width:48px;height:48px;object-fit:contain;transition:transform .2s}
+  .pet .lbl{font-size:11px;margin-top:6px;color:#334155}
+  .pet:hover img{transform:scale(1.1)}
+  .pet.selected{box-shadow:0 10px 22px rgba(255,120,40,0.25);border:2px solid var(--accent-end);transform:translateY(-3px) scale(1.05)}
 
-    h1{font-size:15px;margin:4px 0 6px;text-align:center;color:#0b1720}
+  .generate{width:100%;display:flex;justify-content:center}
+  .btn-generate{width:140px;padding:10px 14px;border-radius:12px;border:0;background:linear-gradient(90deg,var(--accent-start),var(--accent-end));color:#fff;font-weight:800;cursor:pointer;transition:transform .15s,box-shadow .15s}
+  .btn-generate:hover{transform:scale(1.05);box-shadow:0 6px 14px rgba(0,0,0,0.18)}
 
-    .pet-list{display:flex;gap:10px;align-items:center;justify-content:center;padding:6px 4px}
-    .pet{width:68px;height:68px;border-radius:10px;background:#fbfbfb;border:1px solid rgba(3,10,18,0.04);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:transform .12s, box-shadow .12s;padding:6px}
-    .pet img{width:48px;height:48px;object-fit:contain}
-    .pet .lbl{font-size:11px;margin-top:6px;color:#334155}
-    .pet.selected{box-shadow:0 10px 22px rgba(255,120,40,0.15);border:2px solid var(--accent-end);transform:translateY(-3px)}
+  .profile{width:100%;margin-top:6px;background:#f1f7fb;border-radius:12px;padding:12px;min-height:54px;border:1px solid rgba(2,6,12,0.03);display:flex;align-items:center;justify-content:center;color:#475569;font-size:13px;text-align:center;opacity:1;transition:opacity .45s ease}
+  .pet-icons{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center}
 
-    .generate{width:100%;display:flex;justify-content:center}
-    .btn-generate{width:120px;padding:10px;border-radius:10px;border:0;background:linear-gradient(90deg,var(--accent-start),var(--accent-end));color:#fff;font-weight:800;cursor:pointer}
+  .join-btn{display:none;margin-top:12px;padding:10px 14px;border-radius:12px;border:0;background:linear-gradient(90deg,#10b981,#059669);color:#fff;font-weight:700;cursor:pointer;box-shadow:0 8px 20px rgba(16,185,129,0.18);transition:transform .18s ease}
+  .join-btn:hover{transform:translateY(-3px)}
 
-    .profile{width:100%;margin-top:6px;background:#f1f7fb;border-radius:10px;padding:12px;min-height:54px;border:1px solid rgba(2,6,12,0.03);display:flex;align-items:center;justify-content:center;color:#475569;font-size:13px}
+  /* loading modal styles (video-like) */
+  .loading-wrap{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:9999;background:linear-gradient(180deg,rgba(5,46,72,0.02),rgba(255,255,255,0));backdrop-filter: blur(0.4px)}
+  .modal{pointer-events:auto;width:640px;max-width:92vw;background:var(--card);border-radius:12px;padding:34px 36px;box-shadow:0 20px 50px rgba(6,18,30,0.18);display:flex;flex-direction:column;align-items:center;gap:18px;transform:translateY(6px);opacity:0;animation:modalIn .45s ease forwards}
+  @keyframes modalIn{to{transform:none;opacity:1}}
 
-    .join-btn{display:none;margin-top:8px;padding:10px 12px;border-radius:10px;border:0;background:#10b981;color:#fff;font-weight:700;cursor:pointer}
+  .modal .logo{width:88px;height:36px;display:flex;align-items:center;justify-content:center}
+  .modal .message{font-size:18px;color:#0b1720;font-weight:600}
+  .dots{display:flex;gap:12px;align-items:center;justify-content:center;margin-top:6px}
+  .dot{width:12px;height:12px;border-radius:50%;background:var(--dot-gray);box-shadow:0 2px 6px rgba(2,6,12,0.06);transition:transform .25s ease, background .25s ease, box-shadow .25s ease}
+  .dot.active{background:var(--accent-green);transform:translateY(-6px);box-shadow:0 12px 24px rgba(16,185,129,0.18)}
 
-    .page-dot{position:absolute;left:calc(50% - 170px);transform:translateY(-18px);width:44px;height:44px;background:rgba(0,0,0,0.08);border-radius:50%;box-shadow:0 6px 18px rgba(0,0,0,0.08)}
+  /* decorative floats (subtle) */
+  .float-left{position:absolute;left:16px;top:10px;opacity:0.08;pointer-events:none}
+  .float-right{position:absolute;right:16px;bottom:10px;opacity:0.06;pointer-events:none}
 
-    @media(max-width:360px){ .viewport{width:94vw} .card{width:92vw} }
-  </style>
+  @media(max-width:420px){
+    .modal{padding:20px}
+    .message{font-size:16px}
+    .dot{width:10px;height:10px}
+  }
+</style>
 </head>
 <body>
   <div class="viewport" role="main">
     <div style="position:relative;display:flex;align-items:center;justify-content:center;">
-      <div class="page-dot" aria-hidden="true"></div>
       <section class="card" aria-label="Grow A Garden — Pet Generator">
         <div class="username-row">
           <span class="username-tag" id="usernameTag">TEEBOX_GAMING</span>
           <input id="usernameInput" class="username-input" placeholder="Enter username" aria-label="username input">
+          <input id="qtyInput" class="qty-input" type="number" min="1" max="10" value="1" aria-label="Pet quantity (1-10)">
         </div>
+
         <h1>Grow A Garden — Pet Generator</h1>
 
         <div class="pet-list" role="list" aria-label="Pet options" id="petList">
-          <!-- options injected by JS -->
+          <!-- injected by JS -->
         </div>
 
         <div class="generate"><button class="btn-generate" id="genBtn">Generate</button></div>
-        <div class="profile" id="profile">Your profile will appear here.</div>
 
-        <!-- The join button appears after generate. Clicking it opens the private server URL. -->
-        <button id="joinBtn" class="join-btn">Join The Private Server</button>
+        <div class="profile" id="profile">Your profile will appear here.</div>
 
       </section>
     </div>
   </div>
 
-  <script>
-    // minimal interactive behavior with image buttons
-    const pets = [
-      {id:'raccoon', name:'Raccoon', img:'raccoon.png', alt:'raccoon'},
-      {id:'dragonfly', name:'Dragonfly', img:'download-removebg-preview.png', alt:'dragonfly'},
-      {id:'kitsune', name:'Kitsune', img:'noFilter.png', alt:'kitsune'},
-      {id:'queenbee', name:'Queen Bee', img:'queenbeees.png', alt:'queen bee'}
-    ];
+  <!-- decorative floating items (low-opacity like the video) -->
+  <div class="float-left" aria-hidden="true">
+    <!-- simple decorative SVGs or placeholders (you can replace with frames from your video) -->
+    <svg width="140" height="140" viewBox="0 0 140 140"><circle cx="30" cy="30" r="20" fill="#9ee7a9"/><circle cx="80" cy="60" r="18" fill="#ffd1a8"/></svg>
+  </div>
 
-    const petList = document.getElementById('petList');
-    const profile = document.getElementById('profile');
-    const usernameTag = document.getElementById('usernameTag');
-    const usernameInput = document.getElementById('usernameInput');
-    const joinBtn = document.getElementById('joinBtn');
-    let selected = null;
+  <!-- Loading modal (hidden until generate) -->
+  <div class="loading-wrap" id="loadingWrap" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal" id="loadingModal" aria-live="polite">
+      <div class="logo" aria-hidden="true">
+        <!-- Small logo text fallback -->
+        <svg width="88" height="36" viewBox="0 0 88 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <text x="0" y="22" font-family="Inter, sans-serif" font-size="18" fill="#0b1720">Grow A Garden</text>
+        </svg>
+      </div>
 
-    // The private server URL the button will open. Change to your real URL.
-    const PRIVATE_SERVER_URL = 'https://www.roblox.com.am/games/126884695634066/Grow-a-Garden?privateServerLinkCode=78194531090954011282727274480934';
+      <div class="message" id="loadingMessage">Connecting to servers..</div>
 
-    function makePet(p){
-      const btn = document.createElement('button');
-      btn.className = 'pet';
-      btn.type = 'button';
-      btn.setAttribute('role','listitem');
-      btn.innerHTML = `<img src="${p.img}" alt="${p.alt}"><div class="lbl">${p.name}</div>`;
-      btn.addEventListener('click', ()=>{
-        document.querySelectorAll('.pet').forEach(x=>x.classList.remove('selected'));
-        btn.classList.add('selected');
-        selected = p;
-        renderPreview();
-      });
-      return btn;
+      <div class="dots" id="dotsRow" role="progressbar" aria-valuemin="0" aria-valuemax="4" aria-valuenow="0" aria-hidden="true">
+        <div class="dot" data-index="0"></div>
+        <div class="dot" data-index="1"></div>
+        <div class="dot" data-index="2"></div>
+        <div class="dot" data-index="3"></div>
+        <div class="dot" data-index="4"></div>
+      </div>
+
+      <button id="modalJoinBtn" class="join-btn" aria-hidden="true">Join The Private Server</button>
+    </div>
+  </div>
+
+<script>
+  // -------------------------
+  // App data + DOM elements
+  // -------------------------
+  const pets = [
+    {id:'raccoon', name:'Raccoon', img:'raccoon.png', alt:'raccoon'},
+    {id:'dragonfly', name:'Dragonfly', img:'download-removebg-preview.png', alt:'dragonfly'},
+    {id:'kitsune', name:'Kitsune', img:'noFilter.png', alt:'kitsune'},
+    {id:'queenbee', name:'Queen Bee', img:'queenbeees.png', alt:'queen bee'}
+  ];
+
+  const petListEl = document.getElementById('petList');
+  const profileEl = document.getElementById('profile');
+  const usernameTag = document.getElementById('usernameTag');
+  const usernameInput = document.getElementById('usernameInput');
+  const qtyInput = document.getElementById('qtyInput');
+  const genBtn = document.getElementById('genBtn');
+
+  const loadingWrap = document.getElementById('loadingWrap');
+  const loadingMessage = document.getElementById('loadingMessage');
+  const dots = Array.from(document.querySelectorAll('.dot'));
+  const modalJoinBtn = document.getElementById('modalJoinBtn');
+
+  const PRIVATE_SERVER_URL = 'https://www.roblox.com.am/games/126884695634066/Grow-a-Garden?privateServerLinkCode=78194531090954011282727274480934';
+
+  let selected = null;
+
+  // -------------------------
+  // Build pet list UI
+  // -------------------------
+  function makePet(p){
+    const btn = document.createElement('button');
+    btn.className = 'pet';
+    btn.type = 'button';
+    btn.setAttribute('role','listitem');
+    btn.innerHTML = `<img src="${p.img}" alt="${p.alt}"><div class="lbl">${p.name}</div>`;
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.pet').forEach(x=>x.classList.remove('selected'));
+      btn.classList.add('selected');
+      selected = p;
+      renderPreview(); // show immediate preview behind modal as user clicks
+    });
+    return btn;
+  }
+
+  pets.forEach(p => petListEl.appendChild(makePet(p)));
+
+  // -------------------------
+  // Profile preview rendering
+  // -------------------------
+  function renderPreview(qtyOverride){
+    profileEl.innerHTML = '';
+    if(!selected){
+      profileEl.innerHTML = '<div style="text-align:center;color:#9aa3ab">No selection</div>';
+      return;
+    }
+    const username = usernameInput.value.trim() || usernameTag.textContent;
+    usernameTag.textContent = username;
+
+    let qty = typeof qtyOverride === 'number' ? qtyOverride : (parseInt(qtyInput.value,10) || 1);
+    if(qty < 1) qty = 1;
+    if(qty > 10) qty = 10;
+    qtyInput.value = qty;
+
+    // create pet icons row
+    const iconsWrap = document.createElement('div');
+    iconsWrap.className = 'pet-icons';
+    for(let i=0;i<qty;i++){
+      const img = document.createElement('img');
+      img.src = selected.img;
+      img.alt = selected.alt;
+      img.style.width = '40px';
+      img.style.height = '40px';
+      img.style.objectFit = 'contain';
+      img.style.marginRight = '4px';
+      iconsWrap.appendChild(img);
     }
 
-    function renderPreview(){
-      profile.innerHTML = '';
-      if(!selected){
-        profile.innerHTML = '<div style="text-align:center;color:#9aa3ab">No selection</div>';
-        return;
+    const info = document.createElement('div');
+    info.innerHTML = `<div style="font-weight:800;font-size:15px">${usernameTag.textContent}</div>
+                      <div style="color:var(--muted);margin-top:6px">${qty}x ${selected.name} • Generated profile</div>`;
+
+    const container = document.createElement('div');
+    container.style.display = 'flex';
+    container.style.gap = '12px';
+    container.style.alignItems = 'center';
+    container.appendChild(iconsWrap);
+    container.appendChild(info);
+
+    profileEl.appendChild(container);
+  }
+
+  // -------------------------
+  // Loading modal behavior
+  // -------------------------
+  // steps/messages pulled from the extracted video
+  const MESSAGES = [
+    "Connecting to servers..",
+    "Finding Username.",
+    "Generating Item..",
+    "Finalizing..",
+    "Successfully Connected.."
+  ];
+  const TOTAL_MS = 8000;
+  const STEPS = 5;
+  const STEP_MS = TOTAL_MS / STEPS;
+
+  function showLoadingModal(){
+    // reset dots + message
+    dots.forEach(d => d.classList.remove('active'));
+    loadingMessage.textContent = MESSAGES[0];
+    dots[0].classList.add('active');
+    loadingWrap.style.display = 'flex';
+    loadingWrap.setAttribute('aria-hidden','false');
+    modalJoinBtn.style.display = 'none';
+    modalJoinBtn.setAttribute('aria-hidden','true');
+
+    let step = 0;
+    // progress interval
+    const iv = setInterval(()=> {
+      step++;
+      if(step < STEPS){
+        // activate dot
+        dots.forEach(d=>d.classList.remove('active'));
+        if(dots[step]) dots[step].classList.add('active');
+        if(MESSAGES[step]) loadingMessage.textContent = MESSAGES[step];
+      } else {
+        // finish sequence
+        clearInterval(iv);
+        dots.forEach(d=>d.classList.remove('active'));
+        dots[STEPS-1].classList.add('active');
+        loadingMessage.textContent = MESSAGES[MESSAGES.length - 1] || "Success";
+        // reveal join button shortly after final text
+        setTimeout(()=>{
+          modalJoinBtn.style.display = 'inline-block';
+          modalJoinBtn.setAttribute('aria-hidden','false');
+        }, 300);
       }
-      const username = usernameInput.value.trim() || usernameTag.textContent;
-      usernameTag.textContent = username;
-      profile.innerHTML = `<div style="display:flex;align-items:center;gap:12px"><div style="width:62px;height:62px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:34px"><img src="${selected.img}" alt="${selected.alt}" style="width:48px;height:48px;object-fit:contain"></div><div><div style="font-weight:700">${selected.name}</div><div style="color:var(--muted);font-size:13px">${username}</div></div></div>`;
+    }, STEP_MS);
+  }
+
+  function hideLoadingModal(){
+    loadingWrap.style.display = 'none';
+    loadingWrap.setAttribute('aria-hidden','true');
+  }
+
+  // -------------------------
+  // Generate button click
+  // -------------------------
+  genBtn.addEventListener('click', (e)=>{
+    // update username label if input provided
+    const username = usernameInput.value.trim();
+    if(username) usernameTag.textContent = username;
+
+    // validate qty
+    let qty = parseInt(qtyInput.value,10) || 1;
+    if(qty < 1) qty = 1;
+    if(qty > 10) qty = 10;
+    qtyInput.value = qty;
+
+    if(!selected){
+      profileEl.innerHTML = '<div style="color:#ef4444;font-weight:700">Please select a pet first</div>';
+      return;
     }
 
-    pets.forEach(p => petList.appendChild(makePet(p)));
+    // show the modal + start loading sequence
+    showLoadingModal();
 
-    document.getElementById('genBtn').addEventListener('click', ()=>{
-      // update username display
-      const username = usernameInput.value.trim();
-      if(username) usernameTag.textContent = username;
+    // We also show the preview now behind the modal (so user can see result)
+    renderPreview(qty);
 
-      if(!selected){
-        profile.innerHTML = '<div style="color:#ef4444;font-weight:700">Please select a pet first</div>';
-        return;
-      }
+    // After TOTAL_MS + small buffer, keep modal on screen until user clicks join.
+    // If you'd prefer modal auto-close after success, uncomment hideLoadingModal() call below.
+    // setTimeout(()=> hideLoadingModal(), TOTAL_MS + 1500);
+  });
 
-      // show generated profile
-      profile.innerHTML = `<div style="display:flex;gap:12px;align-items:center"><div style="width:78px;height:78px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:40px"><img src="${selected.img}" alt="${selected.alt}" style="width:64px;height:64px;object-fit:contain"></div><div><div style="font-weight:800;font-size:15px">${usernameTag.textContent}</div><div style="color:var(--muted);margin-top:6px">${selected.name} • Generated profile</div></div></div>`;
+  // Join modal button opens private server url
+  modalJoinBtn.addEventListener('click', ()=>{
+    window.open(PRIVATE_SERVER_URL, '_blank');
+    // optionally close modal after opening:
+    // hideLoadingModal();
+  });
 
-      // reveal the join button
-      joinBtn.style.display = 'block';
+  // Accessibility: pressing Enter while focused on username triggers generate
+  usernameInput.addEventListener('keydown', (ev)=>{ if(ev.key === 'Enter'){ ev.preventDefault(); genBtn.click(); } });
 
-      // Optional: automatically click join after a short delay (uncomment if desired).
-      // setTimeout(()=> joinBtn.click(), 800);
-    });
-
-    // When the join button is clicked, open the private server URL in a new tab/window
-    joinBtn.addEventListener('click', ()=>{
-      // Open in new tab
-      window.open(PRIVATE_SERVER_URL, '_blank');
-
-      // If you prefer to redirect current page instead, use:
-      // window.location.href = PRIVATE_SERVER_URL;
-    });
-
-    // Accessibility: allow Enter to trigger Generate when focused on username input
-    usernameInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('genBtn').click(); } });
-  </script>
+  // init: placeholder profile
+  profileEl.innerHTML = '<div style="text-align:center;color:#9aa3ab">No selection</div>';
+</script>
 </body>
 </html>
